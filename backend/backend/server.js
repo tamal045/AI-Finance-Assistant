@@ -1,29 +1,36 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Port ko 5000 se badal kar 8080 kiya taaki Mac ka 403 error bypass ho sake
+const PORT = 8080;
 
-// 1. CORS CONFIGURATION (Sabse pehle aur poora open)
+// 1. MIDDLEWARES (Pure open access ke sath)
 app.use(cors({
-    origin: '*', // Sabhi ko allow karo
+    origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']
 }));
-
-// 2. BODY PARSER
 app.use(express.json());
 
-// 3. ROUTES
-const transactionRoutes = require('./routes/transactions');
+// 2. ROUTES SETUP
+const transactionRoutes = require(path.join(__dirname, 'routes', 'transactions'));
 app.use('/api/transactions', transactionRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
-    res.send('AI Personal Finance Backend is Running Smoothly! 🚀');
+    res.send('AI Personal Finance Backend is Running Smoothly! 🔥');
 });
 
-app.listen(5000, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Database status: Running in local memory mode! 🍃`);
+// 3. MONGO_URI CONNECTION
+const MONGO_URI = 'mongodb://127.0.0.1:27017/ai-finance-dashboard';
+
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('Database status: Connected Successfully to MongoDB! 🍃🚀'))
+    .catch((err) => console.error('Database connection error ❌:', err));
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is perfectly live on http://localhost:${PORT}`);
 });

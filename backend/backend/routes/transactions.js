@@ -1,30 +1,46 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
-// Temporary local array to store data in memory
-let localTransactions = [
-    { id: 1, title: 'Salary', amount: 50000, category: 'Salary', type: 'income', date: new Date() },
-    { id: 2, title: 'Food', amount: 12450, category: 'Food', type: 'expense', date: new Date() }
-];
-
-// 1. GET Route: Saare transactions frontend ko bhejna
-router.get('/all', (req, res) => {
-    res.status(200).json({ success: true, data: localTransactions });
+// 1. Mongoose Schema Configuration
+const TransactionSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    amount: { type: Number, required: true },
+    category: { type: String, required: true },
+    type: { type: String, enum: ['income', 'expense'], required: true },
+    date: { type: Date, default: Date.now }
 });
 
-// 2. POST Route: Naya transaction add karna
-router.post('/add', (req, res) => {
-    const { title, amount, category, type } = req.body;
-    const newTransaction = {
-        id: localTransactions.length + 1,
-        title,
-        amount: Number(amount),
-        category,
-        type,
-        date: new Date()
-    };
-    localTransactions.unshift(newTransaction); // Naya transaction upar dikhane ke liye
-    res.status(201).json({ success: true, message: 'Transaction added to memory!', data: newTransaction });
+// Model register karo (Agar pehle se bana hai toh wahi use karega)
+const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
+
+// 2. GET API: Database se saara data nikalne ke liye
+router.get('/', async (req, res) => {
+    try {
+        const data = await Transaction.find().sort({ date: -1 });
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(500).json({ error: "Database se data nikalne me dikkat aayi!" });
+    }
+});
+
+// 3. POST API: Real Database me entry save karne ke liye
+router.post('/', async (req, res) => {
+    try {
+        const { title, amount, category, type } = req.body;
+
+        const newTransaction = new Transaction({
+            title,
+            amount,
+            category,
+            type
+        });
+
+        const savedData = await newTransaction.save();
+        res.status(201).json(savedData); // Frontend ko success response bhejo
+    } catch (err) {
+        res.status(400).json({ error: "Database me save karte waqt error aaya!" });
+    }
 });
 
 module.exports = router;
